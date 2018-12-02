@@ -1,0 +1,9 @@
+-- vi: set ft=lua:
+
+return {
+  _all = {
+    -- Randomize test order.
+    ["shuffle-files"] = true,
+    ["shuffle-tests"] = true,
+  },
+}
