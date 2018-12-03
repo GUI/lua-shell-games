@@ -4,8 +4,8 @@ source = {
   url = "git://github.com/GUI/lua-shell-games.git",
 }
 description = {
-  summary = "libcidr bindings for Lua",
-  detailed = "Perform various CIDR and IP address operations to check IPv4 and IPv6 ranges.",
+  summary = "A library to help execute shell commands more easily and safely.",
+  detailed = "Execute shell commands while capturing their output and exit codes. Includes helpers for performing shell escaping/quoting.",
   homepage = "https://github.com/GUI/lua-shell-games",
   license = "MIT",
 }
