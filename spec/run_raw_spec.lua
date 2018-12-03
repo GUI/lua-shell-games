@@ -47,7 +47,7 @@ describe("run", function()
       command = "ls -1 run_raw-chdir.txt",
       status = 2,
     }, result)
-    assert.are.equal("Executing command failed: ls -1 run_raw-chdir.txt", err)
+    assert.are.equal("Executing command failed (exit code 2): ls -1 run_raw-chdir.txt", err)
 
     result, err = shell.run_raw("ls -1 run_raw-chdir.txt", { chdir = "spec/tmp" })
     assert.are.same({
@@ -194,7 +194,7 @@ describe("run", function()
       command = "exit 33",
       status = 33,
     }, result)
-    assert.are.equal("Executing command failed: exit 33", err)
+    assert.are.equal("Executing command failed (exit code 33): exit 33", err)
   end)
 
   it("raises error when string not given for command", function()

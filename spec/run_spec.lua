@@ -47,7 +47,7 @@ describe("run", function()
       command = "ls -1 run-chdir.txt",
       status = 2,
     }, result)
-    assert.are.equal("Executing command failed: ls -1 run-chdir.txt", err)
+    assert.are.equal("Executing command failed (exit code 2): ls -1 run-chdir.txt", err)
 
     result, err = shell.run({ "ls", "-1", "run-chdir.txt" }, { chdir = "spec/tmp" })
     assert.are.same({
@@ -185,7 +185,7 @@ describe("run", function()
       command = "exit 33",
       status = 33,
     }, result)
-    assert.are.equal("Executing command failed: exit 33", err)
+    assert.are.equal("Executing command failed (exit code 33): exit 33", err)
   end)
 
   it("raises error when table not given for args", function()

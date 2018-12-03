@@ -54,7 +54,7 @@ describe("capture_combined", function()
       status = 2,
       output = "ls: cannot access capture_combined-chdir.txt: No such file or directory\n"
     }, result)
-    assert.are.equal("Executing command failed: ls -1 capture_combined-chdir.txt 2>&1\nOutput: ls: cannot access capture_combined-chdir.txt: No such file or directory\n", err)
+    assert.are.equal("Executing command failed (exit code 2): ls -1 capture_combined-chdir.txt 2>&1\nOutput: ls: cannot access capture_combined-chdir.txt: No such file or directory\n", err)
 
     result, err = shell.capture_combined({ "ls", "-1", "capture_combined-chdir.txt" }, { chdir = "spec/tmp" })
     assert.are.same({
@@ -180,7 +180,7 @@ describe("capture_combined", function()
       status = 33,
       output = "",
     }, result)
-    assert.are.equal("Executing command failed: exit 33 2>&1\nOutput: ", err)
+    assert.are.equal("Executing command failed (exit code 33): exit 33 2>&1\nOutput: ", err)
   end)
 
   it("raises error when table not given for args", function()

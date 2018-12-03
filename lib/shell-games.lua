@@ -151,7 +151,7 @@ function _M.run_raw(command, options)
   result["command"] = command
 
   if err == nil and result["status"] ~= 0 then
-    err = "Executing command failed: " .. result["command"]
+    err = "Executing command failed (exit code " .. (result["status"] or "") .. "): " .. result["command"]
     if options["capture"] then
       err = err .. "\nOutput: " .. (result["output"] or "")
     end

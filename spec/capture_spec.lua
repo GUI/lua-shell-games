@@ -54,7 +54,7 @@ describe("capture", function()
       status = 2,
       output = "",
     }, result)
-    assert.are.equal("Executing command failed: ls -1 capture-chdir.txt\nOutput: ", err)
+    assert.are.equal("Executing command failed (exit code 2): ls -1 capture-chdir.txt\nOutput: ", err)
 
     result, err = shell.capture({ "ls", "-1", "capture-chdir.txt" }, { chdir = "spec/tmp" })
     assert.are.same({
@@ -198,7 +198,7 @@ describe("capture", function()
       status = 33,
       output = "",
     }, result)
-    assert.are.equal("Executing command failed: exit 33\nOutput: ", err)
+    assert.are.equal("Executing command failed (exit code 33): exit 33\nOutput: ", err)
   end)
 
   it("raises error when table not given for args", function()
