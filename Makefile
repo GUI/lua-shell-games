@@ -14,6 +14,9 @@ lint:
 test: lint
 	luarocks make --local shell-games-git-1.rockspec
 	busted spec
+	busted --lua=lua spec
+	busted --lua=luajit spec
+	busted --lua=resty spec
 
 install-test-deps-yum:
 	yum -y install gcc

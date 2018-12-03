@@ -4,6 +4,8 @@ FROM openresty/openresty:1.11.2.1-centos
 RUN yum -y install make
 
 ENV PATH /usr/local/openresty/luajit/bin:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV LUA_PATH /root/.luarocks/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua;;
+ENV LUA_CPATH /usr/local/openresty/luajit/lib/lua/5.1/?.so;;
 
 RUN mkdir /app
 WORKDIR /app

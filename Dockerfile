@@ -6,6 +6,9 @@ RUN yum -y install make
 # Dependencies for the release process.
 RUN yum -y install git zip
 
+ENV LUA_PATH /root/.luarocks/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua;;
+ENV LUA_CPATH /usr/local/openresty/luajit/lib/lua/5.1/?.so;;
+
 RUN mkdir /app
 WORKDIR /app
 

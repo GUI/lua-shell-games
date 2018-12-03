@@ -65,7 +65,12 @@ local function add_command_options(command, options)
 end
 
 local function capture(command)
-  if not LUA52_MODE then
+  local status_code_workaround = false
+  if not LUA52_MODE or ngx then -- luacheck: globals ngx
+    status_code_workaround = true
+  end
+
+  if status_code_workaround then
     command = "sh -c " .. _M.quote(command) .. [[; echo -n "=====LUA_SHELL_GAME_STATUS_CODE:$?"]]
   end
 
@@ -76,18 +81,22 @@ local function capture(command)
 
   local result = {}
   local err
-  if LUA52_MODE then
+  if not status_code_workaround then
     local _, _, close_status = handle:close()
     result["status"] = close_status
     result["output"] = all_output
   else
     handle:close()
 
-    local match_output, match_status = string.match(all_output, [[^(.*)=====LUA_SHELL_GAME_STATUS_CODE:(%d+)$]])
-    if match_output and match_status then
-      result["output"] = match_output
-      result["status"] = tonumber(match_status)
-    else
+    if all_output then
+      local match_output, match_status = string.match(all_output, [[^(.*)=====LUA_SHELL_GAME_STATUS_CODE:(%d+)$]])
+      if match_output and match_status then
+        result["output"] = match_output
+        result["status"] = tonumber(match_status)
+      end
+    end
+
+    if result["status"] == nil then
       -- This means we never got the "STATUS_CODE" output, so the entire
       -- sub-processes must have gotten killed off.
       err = "Command exited prematurely: " .. command .. "\nOutput: " .. (all_output or "")

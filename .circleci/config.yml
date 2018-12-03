@@ -3,6 +3,9 @@ jobs:
   default:
     docker:
       - image: openresty/openresty:1.13.6.2-2-centos
+    environment:
+      LUA_PATH: /root/.luarocks/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua;;
+      LUA_CPATH: /usr/local/openresty/luajit/lib/lua/5.1/?.so;;
     steps:
       - checkout
       - run: yum -y install make
@@ -17,6 +20,8 @@ jobs:
     environment:
       PATH: /usr/local/openresty/luajit/bin:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
       TEST_NGINX_RESOLVER: 127.0.0.11 ipv6=off
+      LUA_PATH: /root/.luarocks/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua;;
+      LUA_CPATH: /usr/local/openresty/luajit/lib/lua/5.1/?.so;;
     steps:
       - checkout
       - run: yum -y install make
