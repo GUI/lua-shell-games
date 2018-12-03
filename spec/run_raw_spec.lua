@@ -34,7 +34,7 @@ describe("run", function()
 
     assert.has.error(function()
       shell.run_raw("echo -n foo", { capture = "true" })
-    end, "bad run option 'capture' (boolean expected, got string)")
+    end, "bad option 'capture' (boolean expected, got string)")
   end)
 
   it("chdir option", function()
@@ -58,7 +58,7 @@ describe("run", function()
 
     assert.has.error(function()
       shell.run_raw("ls -1 run-chdir.txt", { chdir = 1 })
-    end, "bad run option 'chdir' (string expected, got number)")
+    end, "bad option 'chdir' (string expected, got number)")
   end)
 
   it("env option", function()
@@ -80,7 +80,7 @@ describe("run", function()
 
     assert.has.error(function()
       shell.run_raw("env", { env = "FOO=bar" })
-    end, "bad run option 'env' (table expected, got string)")
+    end, "bad option 'env' (table expected, got string)")
   end)
 
   it("stderr option", function()
@@ -98,7 +98,7 @@ describe("run", function()
 
     assert.has.error(function()
       shell.run_raw("spec/support/generate-stdout-stderr", { stderr = 1 })
-    end, "bad run option 'stderr' (string expected, got number)")
+    end, "bad option 'stderr' (string expected, got number)")
   end)
 
   it("stdout option", function()
@@ -116,7 +116,7 @@ describe("run", function()
 
     assert.has.error(function()
       shell.run_raw("spec/support/generate-stdout-stderr", { stdout = 1 })
-    end, "bad run option 'stdout' (string expected, got number)")
+    end, "bad option 'stdout' (string expected, got number)")
   end)
 
   it("stdout redirect to stderr", function()
@@ -166,7 +166,7 @@ describe("run", function()
 
     assert.has.error(function()
       shell.run_raw("umask", { umask = 077 })
-    end, "bad run option 'umask' (string expected, got number)")
+    end, "bad option 'umask' (string expected, got number)")
   end)
 
   it("allows for unquoted arguments", function()
@@ -211,5 +211,11 @@ describe("run", function()
     assert.has.error(function()
       shell.run_raw("ls", "options")
     end, "bad argument #2 (table expected, got string)")
+  end)
+
+  it("raises error for unknown option", function()
+    assert.has.error(function()
+      shell.run_raw("ls", { foobar = true })
+    end, "bad option 'foobar' (unknown option)")
   end)
 end)

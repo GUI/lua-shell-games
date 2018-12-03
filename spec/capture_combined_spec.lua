@@ -27,30 +27,20 @@ describe("capture_combined", function()
     assert.are.equal(nil, err)
   end)
 
-  it("capture option is overridden", function()
-    local result, err = shell.capture_combined({ "echo", "-n", "foo" }, { capture = true })
+  it("captures mixed stdout and stderr by default", function()
+    local result, err = shell.capture_combined({ "spec/support/generate-stdout-stderr" })
     assert.are.same({
-      command = "echo -n foo 2>&1",
+      command = "spec/support/generate-stdout-stderr 2>&1",
       status = 0,
-      output = "foo",
+      output = "1. stdout\n2. stderr\n3. stdout\n4. stderr\n",
     }, result)
     assert.are.equal(nil, err)
+  end)
 
-    result, err = shell.capture_combined({ "echo", "-n", "foo" }, { capture = false })
-    assert.are.same({
-      command = "echo -n foo 2>&1",
-      status = 0,
-      output = "foo",
-    }, result)
-    assert.are.equal(nil, err)
-
-    result, err = shell.capture_combined({ "echo", "-n", "foo" }, { capture = "true" })
-    assert.are.same({
-      command = "echo -n foo 2>&1",
-      status = 0,
-      output = "foo",
-    }, result)
-    assert.are.equal(nil, err)
+  it("capture option is invalid", function()
+    assert.has.error(function()
+      shell.capture_combined({ "echo", "-n", "foo" }, { capture = true })
+    end, "bad option 'capture' (unknown option)")
   end)
 
   it("chdir option", function()
@@ -76,11 +66,11 @@ describe("capture_combined", function()
 
     assert.has.error(function()
       shell.capture_combined({ "ls", "-1", "run-chdir.txt" }, { chdir = 1 })
-    end, "bad run option 'chdir' (string expected, got number)")
+    end, "bad option 'chdir' (string expected, got number)")
   end)
 
   it("env option", function()
-    local result, err = shell.capture_combined({ "env" }, { capture = true })
+    local result, err = shell.capture_combined({ "env" })
     assert.are.same({ "command", "output", "status" }, table_keys(result))
     assert.are.equal("env 2>&1", result["command"])
     assert.are.equal(0, result["status"])
@@ -88,7 +78,7 @@ describe("capture_combined", function()
     assert.are_not.match("SHELL_GAMES_FOO=foo", result["output"])
     assert.are.equal(nil, err)
 
-    result, err = shell.capture_combined({ "env" }, { capture = true, env = { SHELL_GAMES_FOO = "foo bar" } })
+    result, err = shell.capture_combined({ "env" }, { env = { SHELL_GAMES_FOO = "foo bar" } })
     assert.are.same({ "command", "output", "status" }, table_keys(result))
     assert.are.equal("env 'SHELL_GAMES_FOO=foo bar' && env 2>&1", result["command"])
     assert.are.equal(0, result["status"])
@@ -98,28 +88,13 @@ describe("capture_combined", function()
 
     assert.has.error(function()
       shell.capture_combined({ "env" }, { env = "FOO=bar" })
-    end, "bad run option 'env' (table expected, got string)")
+    end, "bad option 'env' (table expected, got string)")
   end)
 
-  it("stderr option is overrridden", function()
-    local result, err = shell.capture_combined({ "spec/support/generate-stdout-stderr" }, { stderr = "spec/tmp/capture_combined-stderr.txt" })
-    assert.are.same({
-      command = "spec/support/generate-stdout-stderr 2>&1",
-      status = 0,
-      output = "1. stdout\n2. stderr\n3. stdout\n4. stderr\n",
-    }, result)
-    assert.are.equal(nil, err)
-
-    local file = io.open("spec/tmp/capture_combined-stderr.txt")
-    assert.are.equal(nil, file)
-
-    result, err = shell.capture_combined({ "spec/support/generate-stdout-stderr" }, { stderr = 1 })
-    assert.are.same({
-      command = "spec/support/generate-stdout-stderr 2>&1",
-      status = 0,
-      output = "1. stdout\n2. stderr\n3. stdout\n4. stderr\n",
-    }, result)
-    assert.are.equal(nil, err)
+  it("stderr option is invalid", function()
+    assert.has.error(function()
+      shell.capture_combined({ "spec/support/generate-stdout-stderr" }, { stderr = "spec/tmp/capture_combined-stderr.txt" })
+    end, "bad option 'stderr' (unknown option)")
   end)
 
   it("stdout option", function()
@@ -138,24 +113,21 @@ describe("capture_combined", function()
 
     assert.has.error(function()
       shell.capture_combined({ "spec/support/generate-stdout-stderr" }, { stdout = 1 })
-    end, "bad run option 'stdout' (string expected, got number)")
+    end, "bad option 'stdout' (string expected, got number)")
   end)
 
   it("stdout redirect to stderr", function()
-    local result, err = shell.capture_combined({ "spec/support/generate-stdout-stderr" }, { stdout = "&2", stderr = "spec/tmp/capture_combined-stdout-to-stderr.txt" })
+    local result, err = shell.capture_combined({ "spec/support/generate-stdout-stderr" }, { stdout = "&2" })
     assert.are.same({
       command = "spec/support/generate-stdout-stderr 2>&1 1>&2",
       status = 0,
       output = "1. stdout\n2. stderr\n3. stdout\n4. stderr\n",
     }, result)
     assert.are.equal(nil, err)
-
-    local file = io.open("spec/tmp/capture_combined-stdout-to-stderr.txt")
-    assert.are.equal(nil, file)
   end)
 
   it("stderr redirect to stdout", function()
-    local result, err = shell.capture_combined({ "spec/support/generate-stdout-stderr" }, { stderr = "&1", stdout = "spec/tmp/capture_combined-stderr-to-stdout.txt" })
+    local result, err = shell.capture_combined({ "spec/support/generate-stdout-stderr" }, { stdout = "spec/tmp/capture_combined-stderr-to-stdout.txt" })
     assert.are.same({
       command = "spec/support/generate-stdout-stderr 2>&1 1>spec/tmp/capture_combined-stderr-to-stdout.txt",
       status = 0,
@@ -170,7 +142,7 @@ describe("capture_combined", function()
   end)
 
   it("umask option", function()
-    local result, err = shell.capture_combined({ "umask" }, { capture = true })
+    local result, err = shell.capture_combined({ "umask" })
     assert.are.same({
       command = "umask 2>&1",
       status = 0,
@@ -178,7 +150,7 @@ describe("capture_combined", function()
     }, result)
     assert.are.equal(nil, err)
 
-    result, err = shell.capture_combined({ "umask" }, { capture = true, umask = "077" })
+    result, err = shell.capture_combined({ "umask" }, { umask = "077" })
     assert.are.same({
       command = "umask 077 && umask 2>&1",
       status = 0,
@@ -188,11 +160,11 @@ describe("capture_combined", function()
 
     assert.has.error(function()
       shell.capture_combined({ "umask" }, { umask = 077 })
-    end, "bad run option 'umask' (string expected, got number)")
+    end, "bad option 'umask' (string expected, got number)")
   end)
 
   it("quotes arguments", function()
-    local result, err = shell.capture_combined({ "echo", "-n", "$PATH" }, { capture = true })
+    local result, err = shell.capture_combined({ "echo", "-n", "$PATH" })
     assert.are.same({
       command = "echo -n '$PATH' 2>&1",
       status = 0,
@@ -225,5 +197,11 @@ describe("capture_combined", function()
     assert.has.error(function()
       shell.capture_combined({ "ls" }, "options")
     end, "bad argument #2 (table expected, got string)")
+  end)
+
+  it("raises error for unknown option", function()
+    assert.has.error(function()
+      shell.capture_combined({ "ls" }, { foobar = true })
+    end, "bad option 'foobar' (unknown option)")
   end)
 end)

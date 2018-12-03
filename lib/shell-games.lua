@@ -26,11 +26,11 @@ local function assert_run_options(options)
   for key, _ in pairs(options) do
     local expected_type = RUN_OPTIONS[key]
     if not expected_type then
-      error(string.format("bad run option '%s' (unknown option)", key), 2)
+      error(string.format("bad option '%s' (unknown option)", key), 2)
     else
       local actual_type = type(options[key])
       if actual_type ~= expected_type then
-        error(string.format("bad run option '%s' (%s expected, got %s)", key, expected_type, actual_type), 2)
+        error(string.format("bad option '%s' (%s expected, got %s)", key, expected_type, actual_type), 2)
       end
     end
   end
@@ -169,6 +169,9 @@ function _M.capture(args, options)
   assert_arg(1, args, "table")
   if options ~= nil then
     assert_arg(2, options, "table")
+    if options["capture"] ~= nil then
+      error("bad option 'capture' (unknown option)")
+    end
   else
     options = {}
   end
@@ -181,10 +184,14 @@ function _M.capture_combined(args, options)
   assert_arg(1, args, "table")
   if options ~= nil then
     assert_arg(2, options, "table")
+    if options["stderr"] ~= nil then
+      error("bad option 'stderr' (unknown option)")
+    end
   else
     options = {}
   end
   options["stderr"] = "&1"
+
   return _M.capture(args, options)
 end
 

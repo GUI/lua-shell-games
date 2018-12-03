@@ -27,30 +27,20 @@ describe("capture", function()
     assert.are.equal(nil, err)
   end)
 
-  it("capture option is overridden", function()
-    local result, err = shell.capture({ "echo", "-n", "foo" }, { capture = true })
+  it("captures only stdout by default", function()
+    local result, err = shell.capture({ "spec/support/generate-stdout-stderr" })
     assert.are.same({
-      command = "echo -n foo",
+      command = "spec/support/generate-stdout-stderr",
       status = 0,
-      output = "foo",
+      output = "1. stdout\n3. stdout\n",
     }, result)
     assert.are.equal(nil, err)
+  end)
 
-    result, err = shell.capture({ "echo", "-n", "foo" }, { capture = false })
-    assert.are.same({
-      command = "echo -n foo",
-      status = 0,
-      output = "foo",
-    }, result)
-    assert.are.equal(nil, err)
-
-    result, err = shell.capture({ "echo", "-n", "foo" }, { capture = "true" })
-    assert.are.same({
-      command = "echo -n foo",
-      status = 0,
-      output = "foo",
-    }, result)
-    assert.are.equal(nil, err)
+  it("capture option is invalid", function()
+    assert.has.error(function()
+      shell.capture({ "echo", "-n", "foo" }, { capture = true })
+    end, "bad option 'capture' (unknown option)")
   end)
 
   it("chdir option", function()
@@ -76,11 +66,11 @@ describe("capture", function()
 
     assert.has.error(function()
       shell.capture({ "ls", "-1", "run-chdir.txt" }, { chdir = 1 })
-    end, "bad run option 'chdir' (string expected, got number)")
+    end, "bad option 'chdir' (string expected, got number)")
   end)
 
   it("env option", function()
-    local result, err = shell.capture({ "env" }, { capture = true })
+    local result, err = shell.capture({ "env" })
     assert.are.same({ "command", "output", "status" }, table_keys(result))
     assert.are.equal("env", result["command"])
     assert.are.equal(0, result["status"])
@@ -88,7 +78,7 @@ describe("capture", function()
     assert.are_not.match("SHELL_GAMES_FOO=foo", result["output"])
     assert.are.equal(nil, err)
 
-    result, err = shell.capture({ "env" }, { capture = true, env = { SHELL_GAMES_FOO = "foo bar" } })
+    result, err = shell.capture({ "env" }, { env = { SHELL_GAMES_FOO = "foo bar" } })
     assert.are.same({ "command", "output", "status" }, table_keys(result))
     assert.are.equal("env 'SHELL_GAMES_FOO=foo bar' && env", result["command"])
     assert.are.equal(0, result["status"])
@@ -98,7 +88,7 @@ describe("capture", function()
 
     assert.has.error(function()
       shell.capture({ "env" }, { env = "FOO=bar" })
-    end, "bad run option 'env' (table expected, got string)")
+    end, "bad option 'env' (table expected, got string)")
   end)
 
   it("stderr option", function()
@@ -117,7 +107,7 @@ describe("capture", function()
 
     assert.has.error(function()
       shell.capture({ "spec/support/generate-stdout-stderr" }, { stderr = 1 })
-    end, "bad run option 'stderr' (string expected, got number)")
+    end, "bad option 'stderr' (string expected, got number)")
   end)
 
   it("stdout option", function()
@@ -136,7 +126,7 @@ describe("capture", function()
 
     assert.has.error(function()
       shell.capture({ "spec/support/generate-stdout-stderr" }, { stdout = 1 })
-    end, "bad run option 'stdout' (string expected, got number)")
+    end, "bad option 'stdout' (string expected, got number)")
   end)
 
   it("stdout redirect to stderr", function()
@@ -170,7 +160,7 @@ describe("capture", function()
   end)
 
   it("umask option", function()
-    local result, err = shell.capture({ "umask" }, { capture = true })
+    local result, err = shell.capture({ "umask" })
     assert.are.same({
       command = "umask",
       status = 0,
@@ -178,7 +168,7 @@ describe("capture", function()
     }, result)
     assert.are.equal(nil, err)
 
-    result, err = shell.capture({ "umask" }, { capture = true, umask = "077" })
+    result, err = shell.capture({ "umask" }, { umask = "077" })
     assert.are.same({
       command = "umask 077 && umask",
       status = 0,
@@ -188,11 +178,11 @@ describe("capture", function()
 
     assert.has.error(function()
       shell.capture({ "umask" }, { umask = 077 })
-    end, "bad run option 'umask' (string expected, got number)")
+    end, "bad option 'umask' (string expected, got number)")
   end)
 
   it("quotes arguments", function()
-    local result, err = shell.capture({ "echo", "-n", "$PATH" }, { capture = true })
+    local result, err = shell.capture({ "echo", "-n", "$PATH" })
     assert.are.same({
       command = "echo -n '$PATH'",
       status = 0,
@@ -225,5 +215,11 @@ describe("capture", function()
     assert.has.error(function()
       shell.capture({ "ls" }, "options")
     end, "bad argument #2 (table expected, got string)")
+  end)
+
+  it("raises error for unknown option", function()
+    assert.has.error(function()
+      shell.capture({ "ls" }, { foobar = true })
+    end, "bad option 'foobar' (unknown option)")
   end)
 end)
