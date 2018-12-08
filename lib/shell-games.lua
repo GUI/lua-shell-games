@@ -2,8 +2,7 @@ local _M = {
   _VERSION = "1.0.0"
 }
 
-local LUA52_MODE = (rawget(math, "mod") == nil)
-
+-- Valid options for the `run` commands.
 local RUN_OPTIONS = {
   capture = "boolean",
   chdir = "string",
@@ -13,6 +12,12 @@ local RUN_OPTIONS = {
   umask = "string",
 }
 
+-- Detect whether the app is running in Lua 5.2 mode (including LuaJIT compiled
+-- with the LUAJIT_ENABLE_LUA52COMPAT option), since that affects the
+-- os.execute and pipe:close return codes.
+local LUA52_MODE = (rawget(math, "mod") == nil)
+
+-- Characters that need shell escaping.
 local UNSAFE_CHARS = "[^A-Za-z0-9_@%%+=:,./-]"
 
 local function assert_arg(index, value, expected_type)
@@ -36,6 +41,9 @@ local function assert_run_options(options)
   end
 end
 
+-- Alter the command line string to execute, depending on the run options
+-- passed in. This allows for changing the command in common ways (eg, to set
+-- environment variables, change the directory, or redirect output).
 local function add_command_options(command, options)
   if options["env"] ~= nil then
     local env = { "env" }
@@ -53,25 +61,64 @@ local function add_command_options(command, options)
     command = _M.join({ "cd", options["chdir"] }) .. " && " .. command
   end
 
-  if options["stderr"] ~= nil then
-    command = command .. " 2>" .. options["stderr"]
-  end
+  if options["stderr"] ~= nil or options["stdout"] ~= nil then
+    -- If we're attempting to redirect stderr/stdout and the command consists
+    -- of multiple commands (either separated by "&&" or ";"), then wrap the
+    -- entire command in a sub-shell. This is needed so that we capture the
+    -- entire output, rather than just the output for the last command.
+    if string.match(command, "&&") or string.match(command, ";") then
+      if not string.match(command, "^sh -c ") then
+        command = "sh -c " .. _M.quote(command)
+      end
+    end
 
-  if options["stdout"] ~= nil then
-    command = command .. " 1>" .. options["stdout"]
+    -- Redirect stderr. If a path is given, be sure to escape it, but if a
+    -- we're just redirecting to another descriptor (eg, stdout, &1), then
+    -- don't escape.
+    if options["stderr"] ~= nil then
+      if string.match(options["stderr"], "^&%d+$") then
+        command = command .. " 2>" .. options["stderr"]
+      else
+        command = command .. " 2> " .. _M.quote(options["stderr"])
+      end
+    end
+
+    if options["stdout"] ~= nil then
+      if string.match(options["stdout"], "^&%d+$") then
+        command = command .. " 1>" .. options["stdout"]
+      else
+        command = command .. " 1> " .. _M.quote(options["stdout"])
+      end
+    end
   end
 
   return command
 end
 
 local function capture(command)
+  -- By default we'll try to get the exit code from io.popen's handle:close()
+  -- behavior. However, this functionality is only available in Lua 5.2+. So
+  -- for Lua 5.1 and older, fallback to a workaround approach which consists of
+  -- appending the status code to the shell output, and then parsing that out
+  -- (http://lua-users.org/lists/lua-l/2009-06/msg00133.html).
+  --
+  -- This approach also needs to be used in OpenResty, even when LuaJIT is
+  -- compiled with 5.2 features (LUAJIT_ENABLE_LUA52COMPAT), since nginx's
+  -- SIGCHLD handler interferes with handle:close() behavior:
+  -- https://github.com/openresty/lua-nginx-module/issues/779
   local status_code_workaround = false
   if not LUA52_MODE or ngx then -- luacheck: globals ngx
     status_code_workaround = true
   end
 
   if status_code_workaround then
-    command = "sh -c " .. _M.quote(command) .. [[; echo -n "=====LUA_SHELL_GAME_STATUS_CODE:$?"]]
+    -- Ensure that the command is wrapped in sub-shell, so we should always
+    -- output the status code output afterwards, even if the underlying command
+    -- exits early.
+    if not string.match(command, "^sh -c ") then
+      command = "sh -c " .. _M.quote(command)
+    end
+    command = command .. [[; echo -n "=====LUA_SHELL_GAME_STATUS_CODE:$?"]]
   end
 
   local handle = io.popen(command, "r")
@@ -88,6 +135,7 @@ local function capture(command)
   else
     handle:close()
 
+    -- Parse the status code out of the output.
     if all_output then
       local match_output, match_status = string.match(all_output, [[^(.*)=====LUA_SHELL_GAME_STATUS_CODE:(%d+)$]])
       if match_output and match_status then
@@ -106,6 +154,35 @@ local function capture(command)
   return result, err
 end
 
+local function execute(command)
+  local result
+
+  if LUA52_MODE then
+    local _, _, status = os.execute(command)
+    result = {
+      status = status,
+    }
+  else
+    -- os.execute's return signature is a bit different under Lua 5.1 or older.
+    -- The exit code value is also shifted by one byte in Linux, so it needs to
+    -- be adjusted:
+    -- http://lua-users.org/lists/lua-l/2004-10/msg00109.html
+    -- https://github.com/keplerproject/lua-compat-5.3/pull/17
+    -- https://github.com/keplerproject/lua-compat-5.3/blob/v0.7/compat53/module.lua#L604-L606
+    local status = os.execute(command)
+    if string.sub(package.config, 1, 1) == "/" then
+      status = status / 256
+    end
+    result = {
+      status = status,
+    }
+  end
+
+  return result
+end
+
+-- Quoting implementation based on Python's shlex:
+-- https://github.com/python/cpython/blob/v3.7.1/Lib/shlex.py#L310-L319
 function _M.quote(str)
   local quoted_str = tostring(str)
   if str == nil or quoted_str == nil or #quoted_str == 0 then
@@ -145,17 +222,7 @@ function _M.run_raw(command, options)
   if options["capture"] then
     result, err = capture(command)
   else
-    if LUA52_MODE then
-      local _, _, execute_status = os.execute(command)
-      result = {
-        status = execute_status,
-      }
-    else
-      local execute_status = os.execute(command)
-      result = {
-        status = (execute_status / 256),
-      }
-    end
+    result, err = execute(command)
   end
   result["command"] = command
 

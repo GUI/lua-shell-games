@@ -1,3 +1,5 @@
+-- Quoting implementation and tests based on Python's shlex:
+-- https://github.com/python/cpython/blob/v3.7.1/Lib/test/test_shlex.py#L296-L309
 describe("quote", function()
   local shell = require "shell-games"
 
@@ -42,15 +44,20 @@ describe("quote", function()
   it("quotes unsafe strings", function()
     local unsafe = {
       [["]],
+      [[`]],
       [[$]],
       [[\]],
       [[!]],
+      "\233",
+      "\224",
+      "\223",
       [[&]],
       [[;]],
       [[{]],
       [[}]],
     }
     for _, str in ipairs(unsafe) do
+      print(str)
       assert.are.equal(string.format([['test%sname']], str), shell.quote("test" .. str .. "name"))
       assert.are.equal(string.format([['test%s'"'"'name'"'"'']], str), shell.quote("test" .. str .. "'name'"))
     end

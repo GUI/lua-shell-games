@@ -44,28 +44,36 @@ describe("capture_combined", function()
   end)
 
   it("chdir option", function()
-    local file = io.open("spec/tmp/capture_combined-chdir.txt", "w")
+    local file = io.open("spec/tmp/capture_combined chdir.txt", "w")
     file:write("")
     file:close()
 
-    local result, err = shell.capture_combined({ "ls", "-1", "capture_combined-chdir.txt" })
+    local result, err = shell.capture_combined({ "ls", "-1", "capture_combined chdir.txt" })
     assert.are.same({
-      command = "ls -1 capture_combined-chdir.txt 2>&1",
+      command = "ls -1 'capture_combined chdir.txt' 2>&1",
       status = 2,
-      output = "ls: cannot access capture_combined-chdir.txt: No such file or directory\n"
+      output = "ls: cannot access capture_combined chdir.txt: No such file or directory\n"
     }, result)
-    assert.are.equal("Executing command failed (exit code 2): ls -1 capture_combined-chdir.txt 2>&1\nOutput: ls: cannot access capture_combined-chdir.txt: No such file or directory\n", err)
+    assert.are.equal("Executing command failed (exit code 2): ls -1 'capture_combined chdir.txt' 2>&1\nOutput: ls: cannot access capture_combined chdir.txt: No such file or directory\n", err)
 
-    result, err = shell.capture_combined({ "ls", "-1", "capture_combined-chdir.txt" }, { chdir = "spec/tmp" })
+    result, err = shell.capture_combined({ "ls", "-1", "capture_combined chdir.txt" }, { chdir = "spec/tmp" })
     assert.are.same({
-      command = "cd spec/tmp && ls -1 capture_combined-chdir.txt 2>&1",
+      command = [[sh -c 'cd spec/tmp && ls -1 '"'"'capture_combined chdir.txt'"'"'' 2>&1]],
       status = 0,
-      output = "capture_combined-chdir.txt\n",
+      output = "capture_combined chdir.txt\n",
     }, result)
     assert.are.equal(nil, err)
 
+    result, err = shell.capture_combined({ "ls", "-1", "chdir.txt" }, { chdir = "spec/tmp/not existent with spaces" })
+    assert.are.same({
+      command = [[sh -c 'cd '"'"'spec/tmp/not existent with spaces'"'"' && ls -1 chdir.txt' 2>&1]],
+      status = 1,
+      output = "sh: line 0: cd: spec/tmp/not existent with spaces: No such file or directory\n",
+    }, result)
+    assert.are.equal("Executing command failed (exit code 1): sh -c 'cd '\"'\"'spec/tmp/not existent with spaces'\"'\"' && ls -1 chdir.txt' 2>&1\nOutput: sh: line 0: cd: spec/tmp/not existent with spaces: No such file or directory\n", err)
+
     assert.has.error(function()
-      shell.capture_combined({ "ls", "-1", "run-chdir.txt" }, { chdir = 1 })
+      shell.capture_combined({ "ls", "-1", "chdir.txt" }, { chdir = 1 })
     end, "bad option 'chdir' (string expected, got number)")
   end)
 
@@ -80,7 +88,7 @@ describe("capture_combined", function()
 
     result, err = shell.capture_combined({ "env" }, { env = { SHELL_GAMES_FOO = "foo bar" } })
     assert.are.same({ "command", "output", "status" }, table_keys(result))
-    assert.are.equal("env 'SHELL_GAMES_FOO=foo bar' && env 2>&1", result["command"])
+    assert.are.equal([[sh -c 'env '"'"'SHELL_GAMES_FOO=foo bar'"'"' && env' 2>&1]], result["command"])
     assert.are.equal(0, result["status"])
     assert.are.match("PATH=/", result["output"])
     assert.are.match("SHELL_GAMES_FOO=foo bar", result["output"])
@@ -93,20 +101,20 @@ describe("capture_combined", function()
 
   it("stderr option is invalid", function()
     assert.has.error(function()
-      shell.capture_combined({ "spec/support/generate-stdout-stderr" }, { stderr = "spec/tmp/capture_combined-stderr.txt" })
+      shell.capture_combined({ "spec/support/generate-stdout-stderr" }, { stderr = "spec/tmp/capture_combined stderr.txt" })
     end, "bad option 'stderr' (unknown option)")
   end)
 
   it("stdout option", function()
-    local result, err = shell.capture_combined({ "spec/support/generate-stdout-stderr" }, { stdout = "spec/tmp/capture_combined-stdout.txt" })
+    local result, err = shell.capture_combined({ "spec/support/generate-stdout-stderr" }, { stdout = "spec/tmp/capture_combined stdout.txt" })
     assert.are.same({
-      command = "spec/support/generate-stdout-stderr 2>&1 1>spec/tmp/capture_combined-stdout.txt",
+      command = "spec/support/generate-stdout-stderr 2>&1 1> 'spec/tmp/capture_combined stdout.txt'",
       status = 0,
       output = "2. stderr\n4. stderr\n",
     }, result)
     assert.are.equal(nil, err)
 
-    local file = io.open("spec/tmp/capture_combined-stdout.txt")
+    local file = io.open("spec/tmp/capture_combined stdout.txt")
     local file_output = file:read("*a")
     file:close()
     assert.are.equal("1. stdout\n3. stdout\n", file_output)
@@ -127,15 +135,15 @@ describe("capture_combined", function()
   end)
 
   it("stderr redirect to stdout", function()
-    local result, err = shell.capture_combined({ "spec/support/generate-stdout-stderr" }, { stdout = "spec/tmp/capture_combined-stderr-to-stdout.txt" })
+    local result, err = shell.capture_combined({ "spec/support/generate-stdout-stderr" }, { stdout = "spec/tmp/capture_combined stderr-to-stdout.txt" })
     assert.are.same({
-      command = "spec/support/generate-stdout-stderr 2>&1 1>spec/tmp/capture_combined-stderr-to-stdout.txt",
+      command = "spec/support/generate-stdout-stderr 2>&1 1> 'spec/tmp/capture_combined stderr-to-stdout.txt'",
       status = 0,
       output = "2. stderr\n4. stderr\n",
     }, result)
     assert.are.equal(nil, err)
 
-    local file = io.open("spec/tmp/capture_combined-stderr-to-stdout.txt")
+    local file = io.open("spec/tmp/capture_combined stderr-to-stdout.txt")
     local file_output = file:read("*a")
     file:close()
     assert.are.equal("1. stdout\n3. stdout\n", file_output)
@@ -152,7 +160,7 @@ describe("capture_combined", function()
 
     result, err = shell.capture_combined({ "umask" }, { umask = "077" })
     assert.are.same({
-      command = "umask 077 && umask 2>&1",
+      command = [[sh -c 'umask 077 && umask' 2>&1]],
       status = 0,
       output = "0077\n",
     }, result)

@@ -38,26 +38,26 @@ describe("run", function()
   end)
 
   it("chdir option", function()
-    local file = io.open("spec/tmp/run_raw-chdir.txt", "w")
+    local file = io.open("spec/tmp/run_raw chdir.txt", "w")
     file:write("")
     file:close()
 
-    local result, err = shell.run_raw("ls -1 run_raw-chdir.txt")
+    local result, err = shell.run_raw("ls -1 'run_raw chdir.txt'")
     assert.are.same({
-      command = "ls -1 run_raw-chdir.txt",
+      command = "ls -1 'run_raw chdir.txt'",
       status = 2,
     }, result)
-    assert.are.equal("Executing command failed (exit code 2): ls -1 run_raw-chdir.txt", err)
+    assert.are.equal("Executing command failed (exit code 2): ls -1 'run_raw chdir.txt'", err)
 
-    result, err = shell.run_raw("ls -1 run_raw-chdir.txt", { chdir = "spec/tmp" })
+    result, err = shell.run_raw("ls -1 'run_raw chdir.txt'", { chdir = "spec/tmp" })
     assert.are.same({
-      command = "cd spec/tmp && ls -1 run_raw-chdir.txt",
+      command = "cd spec/tmp && ls -1 'run_raw chdir.txt'",
       status = 0,
     }, result)
     assert.are.equal(nil, err)
 
     assert.has.error(function()
-      shell.run_raw("ls -1 run-chdir.txt", { chdir = 1 })
+      shell.run_raw("ls -1 'chdir.txt'", { chdir = 1 })
     end, "bad option 'chdir' (string expected, got number)")
   end)
 
@@ -84,14 +84,14 @@ describe("run", function()
   end)
 
   it("stderr option", function()
-    local result, err = shell.run_raw("spec/support/generate-stdout-stderr", { stderr = "spec/tmp/run_raw-stderr.txt" })
+    local result, err = shell.run_raw("spec/support/generate-stdout-stderr", { stderr = "spec/tmp/run_raw stderr.txt" })
     assert.are.same({
-      command = "spec/support/generate-stdout-stderr 2>spec/tmp/run_raw-stderr.txt",
+      command = "spec/support/generate-stdout-stderr 2> 'spec/tmp/run_raw stderr.txt'",
       status = 0,
     }, result)
     assert.are.equal(nil, err)
 
-    local file = io.open("spec/tmp/run_raw-stderr.txt")
+    local file = io.open("spec/tmp/run_raw stderr.txt")
     local file_output = file:read("*a")
     file:close()
     assert.are.equal("2. stderr\n4. stderr\n", file_output)
@@ -102,14 +102,14 @@ describe("run", function()
   end)
 
   it("stdout option", function()
-    local result, err = shell.run_raw("spec/support/generate-stdout-stderr", { stdout = "spec/tmp/run_raw-stdout.txt" })
+    local result, err = shell.run_raw("spec/support/generate-stdout-stderr", { stdout = "spec/tmp/run_raw stdout.txt" })
     assert.are.same({
-      command = "spec/support/generate-stdout-stderr 1>spec/tmp/run_raw-stdout.txt",
+      command = "spec/support/generate-stdout-stderr 1> 'spec/tmp/run_raw stdout.txt'",
       status = 0,
     }, result)
     assert.are.equal(nil, err)
 
-    local file = io.open("spec/tmp/run_raw-stdout.txt")
+    local file = io.open("spec/tmp/run_raw stdout.txt")
     local file_output = file:read("*a")
     file:close()
     assert.are.equal("1. stdout\n3. stdout\n", file_output)
@@ -120,28 +120,28 @@ describe("run", function()
   end)
 
   it("stdout redirect to stderr", function()
-    local result, err = shell.run_raw("spec/support/generate-stdout-stderr", { stdout = "&2", stderr = "spec/tmp/run_raw-stdout-to-stderr.txt" })
+    local result, err = shell.run_raw("spec/support/generate-stdout-stderr", { stdout = "&2", stderr = "spec/tmp/run_raw stdout-to-stderr.txt" })
     assert.are.same({
-      command = "spec/support/generate-stdout-stderr 2>spec/tmp/run_raw-stdout-to-stderr.txt 1>&2",
+      command = "spec/support/generate-stdout-stderr 2> 'spec/tmp/run_raw stdout-to-stderr.txt' 1>&2",
       status = 0,
     }, result)
     assert.are.equal(nil, err)
 
-    local file = io.open("spec/tmp/run_raw-stdout-to-stderr.txt")
+    local file = io.open("spec/tmp/run_raw stdout-to-stderr.txt")
     local file_output = file:read("*a")
     file:close()
     assert.are.equal("1. stdout\n2. stderr\n3. stdout\n4. stderr\n", file_output)
   end)
 
   it("stderr redirect to stdout", function()
-    local result, err = shell.run_raw("spec/support/generate-stdout-stderr", { stderr = "&1", stdout = "spec/tmp/run_raw-stderr-to-stdout.txt" })
+    local result, err = shell.run_raw("spec/support/generate-stdout-stderr", { stderr = "&1", stdout = "spec/tmp/run_raw stderr-to-stdout.txt" })
     assert.are.same({
-      command = "spec/support/generate-stdout-stderr 2>&1 1>spec/tmp/run_raw-stderr-to-stdout.txt",
+      command = "spec/support/generate-stdout-stderr 2>&1 1> 'spec/tmp/run_raw stderr-to-stdout.txt'",
       status = 0,
     }, result)
     assert.are.equal(nil, err)
 
-    local file = io.open("spec/tmp/run_raw-stderr-to-stdout.txt")
+    local file = io.open("spec/tmp/run_raw stderr-to-stdout.txt")
     local file_output = file:read("*a")
     file:close()
     assert.are.equal("1. stdout\n3. stdout\n", file_output)

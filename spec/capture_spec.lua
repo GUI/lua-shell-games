@@ -44,28 +44,28 @@ describe("capture", function()
   end)
 
   it("chdir option", function()
-    local file = io.open("spec/tmp/capture-chdir.txt", "w")
+    local file = io.open("spec/tmp/capture chdir.txt", "w")
     file:write("")
     file:close()
 
-    local result, err = shell.capture({ "ls", "-1", "capture-chdir.txt" })
+    local result, err = shell.capture({ "ls", "-1", "capture chdir.txt" })
     assert.are.same({
-      command = "ls -1 capture-chdir.txt",
+      command = "ls -1 'capture chdir.txt'",
       status = 2,
       output = "",
     }, result)
-    assert.are.equal("Executing command failed (exit code 2): ls -1 capture-chdir.txt\nOutput: ", err)
+    assert.are.equal("Executing command failed (exit code 2): ls -1 'capture chdir.txt'\nOutput: ", err)
 
-    result, err = shell.capture({ "ls", "-1", "capture-chdir.txt" }, { chdir = "spec/tmp" })
+    result, err = shell.capture({ "ls", "-1", "capture chdir.txt" }, { chdir = "spec/tmp" })
     assert.are.same({
-      command = "cd spec/tmp && ls -1 capture-chdir.txt",
+      command = "cd spec/tmp && ls -1 'capture chdir.txt'",
       status = 0,
-      output = "capture-chdir.txt\n",
+      output = "capture chdir.txt\n",
     }, result)
     assert.are.equal(nil, err)
 
     assert.has.error(function()
-      shell.capture({ "ls", "-1", "run-chdir.txt" }, { chdir = 1 })
+      shell.capture({ "ls", "-1", "chdir.txt" }, { chdir = 1 })
     end, "bad option 'chdir' (string expected, got number)")
   end)
 
@@ -92,15 +92,15 @@ describe("capture", function()
   end)
 
   it("stderr option", function()
-    local result, err = shell.capture({ "spec/support/generate-stdout-stderr" }, { stderr = "spec/tmp/capture-stderr.txt" })
+    local result, err = shell.capture({ "spec/support/generate-stdout-stderr" }, { stderr = "spec/tmp/capture stderr.txt" })
     assert.are.same({
-      command = "spec/support/generate-stdout-stderr 2>spec/tmp/capture-stderr.txt",
+      command = "spec/support/generate-stdout-stderr 2> 'spec/tmp/capture stderr.txt'",
       status = 0,
       output = "1. stdout\n3. stdout\n",
     }, result)
     assert.are.equal(nil, err)
 
-    local file = io.open("spec/tmp/capture-stderr.txt")
+    local file = io.open("spec/tmp/capture stderr.txt")
     local file_output = file:read("*a")
     file:close()
     assert.are.equal("2. stderr\n4. stderr\n", file_output)
@@ -111,15 +111,15 @@ describe("capture", function()
   end)
 
   it("stdout option", function()
-    local result, err = shell.capture({ "spec/support/generate-stdout-stderr" }, { stdout = "spec/tmp/capture-stdout.txt" })
+    local result, err = shell.capture({ "spec/support/generate-stdout-stderr" }, { stdout = "spec/tmp/capture stdout.txt" })
     assert.are.same({
-      command = "spec/support/generate-stdout-stderr 1>spec/tmp/capture-stdout.txt",
+      command = "spec/support/generate-stdout-stderr 1> 'spec/tmp/capture stdout.txt'",
       status = 0,
       output = "",
     }, result)
     assert.are.equal(nil, err)
 
-    local file = io.open("spec/tmp/capture-stdout.txt")
+    local file = io.open("spec/tmp/capture stdout.txt")
     local file_output = file:read("*a")
     file:close()
     assert.are.equal("1. stdout\n3. stdout\n", file_output)
@@ -130,30 +130,30 @@ describe("capture", function()
   end)
 
   it("stdout redirect to stderr", function()
-    local result, err = shell.capture({ "spec/support/generate-stdout-stderr" }, { stdout = "&2", stderr = "spec/tmp/capture-stdout-to-stderr.txt" })
+    local result, err = shell.capture({ "spec/support/generate-stdout-stderr" }, { stdout = "&2", stderr = "spec/tmp/capture stdout-to-stderr.txt" })
     assert.are.same({
-      command = "spec/support/generate-stdout-stderr 2>spec/tmp/capture-stdout-to-stderr.txt 1>&2",
+      command = "spec/support/generate-stdout-stderr 2> 'spec/tmp/capture stdout-to-stderr.txt' 1>&2",
       status = 0,
       output = "",
     }, result)
     assert.are.equal(nil, err)
 
-    local file = io.open("spec/tmp/capture-stdout-to-stderr.txt")
+    local file = io.open("spec/tmp/capture stdout-to-stderr.txt")
     local file_output = file:read("*a")
     file:close()
     assert.are.equal("1. stdout\n2. stderr\n3. stdout\n4. stderr\n", file_output)
   end)
 
   it("stderr redirect to stdout", function()
-    local result, err = shell.capture({ "spec/support/generate-stdout-stderr" }, { stderr = "&1", stdout = "spec/tmp/capture-stderr-to-stdout.txt" })
+    local result, err = shell.capture({ "spec/support/generate-stdout-stderr" }, { stderr = "&1", stdout = "spec/tmp/capture stderr-to-stdout.txt" })
     assert.are.same({
-      command = "spec/support/generate-stdout-stderr 2>&1 1>spec/tmp/capture-stderr-to-stdout.txt",
+      command = "spec/support/generate-stdout-stderr 2>&1 1> 'spec/tmp/capture stderr-to-stdout.txt'",
       status = 0,
       output = "2. stderr\n4. stderr\n",
     }, result)
     assert.are.equal(nil, err)
 
-    local file = io.open("spec/tmp/capture-stderr-to-stdout.txt")
+    local file = io.open("spec/tmp/capture stderr-to-stdout.txt")
     local file_output = file:read("*a")
     file:close()
     assert.are.equal("1. stdout\n3. stdout\n", file_output)
