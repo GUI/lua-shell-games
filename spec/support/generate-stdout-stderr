@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 echo "1. stdout"
 echo "2. stderr" 1>&2

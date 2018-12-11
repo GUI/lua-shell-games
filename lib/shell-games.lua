@@ -15,7 +15,12 @@ local RUN_OPTIONS = {
 -- Detect whether the app is running in Lua 5.2 mode (including LuaJIT compiled
 -- with the LUAJIT_ENABLE_LUA52COMPAT option), since that affects the
 -- os.execute and pipe:close return codes.
-local LUA52_MODE = (rawget(math, "mod") == nil)
+--
+-- Based on https://github.com/keplerproject/lua-compat-5.3/blob/v0.7/compat53/init.lua#L88-L91
+local lua_version = _VERSION:sub(-3)
+local is_luajit = (string.dump(function() end) or ""):sub(1, 3) == "\027LJ"
+local is_luajit52 = is_luajit and #setmetatable({}, { __len = function() return 1 end }) == 1
+local LUA52_MODE = lua_version > "5.1" or is_luajit52
 
 -- Characters that need shell escaping.
 local UNSAFE_CHARS = "[^A-Za-z0-9_@%%+=:,./-]"

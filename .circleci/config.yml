@@ -1,27 +1,115 @@
 version: 2
 jobs:
-  default:
+  lua5.1:
+    docker:
+      - image: nickblah/lua:5.1-luarocks-alpine
+    environment:
+      EXPECTED_LUA_VERSION: Lua 5.1
+      REFUTE_LUA52_BEHAVIOR: true
+    steps:
+      - checkout
+      - run: apk add --no-cache make
+      - run: make install-test-deps-apk
+      - run: make install-test-deps
+      - run: make test
+  lua5.2:
+    docker:
+      - image: nickblah/lua:5.2-luarocks-alpine
+    environment:
+      EXPECTED_LUA_VERSION: Lua 5.2
+    steps:
+      - checkout
+      - run: apk add --no-cache make
+      - run: make install-test-deps-apk
+      - run: make install-test-deps
+      - run: make test
+  lua5.3:
+    docker:
+      - image: nickblah/lua:5.3-luarocks-alpine
+    environment:
+      EXPECTED_LUA_VERSION: Lua 5.3
+    steps:
+      - checkout
+      - run: apk add --no-cache make
+      - run: make install-test-deps-apk
+      - run: make install-test-deps
+      - run: make test
+  luajit2.0:
+    docker:
+      - image: nickblah/luajit:2.0-luarocks-alpine
+    environment:
+      EXPECTED_LUA_VERSION: Lua 5.1
+      EXPECTED_LUAJIT_VERSION: LuaJIT 2.0
+      REFUTE_LUA52_BEHAVIOR: true
+    steps:
+      - checkout
+      - run: apk add --no-cache make
+      - run: make install-test-deps-apk
+      - run: make install-test-deps
+      - run: make test
+  luajit2.0-lua52compat:
+    docker:
+      - image: nickblah/luajit:2.0-lua52compat-luarocks-alpine
+    environment:
+      EXPECTED_LUA_VERSION: Lua 5.1
+      EXPECTED_LUAJIT_VERSION: LuaJIT 2.0
+    steps:
+      - checkout
+      - run: apk add --no-cache make
+      - run: make install-test-deps-apk
+      - run: make install-test-deps
+      - run: make test
+  luajit2.1-beta:
+    docker:
+      - image: nickblah/luajit:2.1-beta-luarocks-alpine
+    environment:
+      EXPECTED_LUA_VERSION: Lua 5.1
+      EXPECTED_LUAJIT_VERSION: LuaJIT 2.1
+      REFUTE_LUA52_BEHAVIOR: true
+    steps:
+      - checkout
+      - run: apk add --no-cache make
+      - run: make install-test-deps-apk
+      - run: make install-test-deps
+      - run: make test
+  luajit2.1-beta-lua52compat:
+    docker:
+      - image: nickblah/luajit:2.1-beta-lua52compat-luarocks-alpine
+    environment:
+      EXPECTED_LUA_VERSION: Lua 5.1
+      EXPECTED_LUAJIT_VERSION: LuaJIT 2.1
+    steps:
+      - checkout
+      - run: apk add --no-cache make
+      - run: make install-test-deps-apk
+      - run: make install-test-deps
+      - run: make test
+  openresty:
     docker:
       - image: openresty/openresty:1.13.6.2-2-centos
     environment:
-      LUA_PATH: /root/.luarocks/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua;;
-      LUA_CPATH: /usr/local/openresty/luajit/lib/lua/5.1/?.so;;
+      LUA_PATH: /root/.luarocks/share/lua/5.1/?.lua;;
+      BUSTED_ARGS: --lua=resty
+      EXPECTED_LUA_VERSION: Lua 5.1
+      EXPECTED_LUAJIT_VERSION: LuaJIT 2.1
+      ASSERT_NGX: true
     steps:
       - checkout
       - run: yum -y install make
       - run: make install-test-deps-yum
       - run: make install-test-deps
       - run: make test
-  # Test in older version before LUAJIT_ENABLE_LUA52COMPAT was enabled (to test
-  # under LuaJIT's 5.1 mode).
-  lua51:
+  openresty-no-lua52compat:
     docker:
       - image: openresty/openresty:1.11.2.1-centos
     environment:
       PATH: /usr/local/openresty/luajit/bin:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-      TEST_NGINX_RESOLVER: 127.0.0.11 ipv6=off
-      LUA_PATH: /root/.luarocks/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?.lua;/usr/local/openresty/luajit/share/lua/5.1/?/init.lua;;
-      LUA_CPATH: /usr/local/openresty/luajit/lib/lua/5.1/?.so;;
+      LUA_PATH: /root/.luarocks/share/lua/5.1/?.lua;;
+      BUSTED_ARGS: --lua=resty
+      EXPECTED_LUA_VERSION: Lua 5.1
+      EXPECTED_LUAJIT_VERSION: LuaJIT 2.1
+      REFUTE_LUA52_BEHAVIOR: true
+      ASSERT_NGX: true
     steps:
       - checkout
       - run: yum -y install make
@@ -32,5 +120,12 @@ workflows:
   version: 2
   build:
     jobs:
-      - default
-      - lua51
+      - lua5.1
+      - lua5.2
+      - lua5.3
+      - luajit2.0
+      - luajit2.0-lua52compat
+      - luajit2.1-beta
+      - luajit2.1-beta-lua52compat
+      - openresty
+      - openresty-no-lua52compat

@@ -222,4 +222,25 @@ describe("capture", function()
       shell.capture({ "ls" }, { foobar = true })
     end, "bad option 'foobar' (unknown option)")
   end)
+
+  -- Ensure that even if the output contains the special sequence used to
+  -- workaround lack of exit codes, we still only match the final (real) exit
+  -- code output.
+  it("ignores output containing special status code output", function()
+    local result, err = shell.capture({ "echo", "=====LUA_SHELL_GAME_STATUS_CODE:99" })
+    assert.are.same({
+      command = "echo =====LUA_SHELL_GAME_STATUS_CODE:99",
+      status = 0,
+      output = "=====LUA_SHELL_GAME_STATUS_CODE:99\n",
+    }, result)
+    assert.are.equal(nil, err)
+
+    result, err = shell.capture({ "echo", "=====LUA_SHELL_GAME_STATUS_CODE:99\n\n" })
+    assert.are.same({
+      command = "echo '=====LUA_SHELL_GAME_STATUS_CODE:99\n\n'",
+      status = 0,
+      output = "=====LUA_SHELL_GAME_STATUS_CODE:99\n\n\n",
+    }, result)
+    assert.are.equal(nil, err)
+  end)
 end)

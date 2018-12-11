@@ -49,12 +49,21 @@ describe("capture_combined", function()
     file:close()
 
     local result, err = shell.capture_combined({ "ls", "-1", "capture_combined chdir.txt" })
-    assert.are.same({
-      command = "ls -1 'capture_combined chdir.txt' 2>&1",
-      status = 2,
-      output = "ls: cannot access capture_combined chdir.txt: No such file or directory\n"
-    }, result)
-    assert.are.equal("Executing command failed (exit code 2): ls -1 'capture_combined chdir.txt' 2>&1\nOutput: ls: cannot access capture_combined chdir.txt: No such file or directory\n", err)
+    if string.match(result["output"], "'capture_combined") then
+      assert.are.same({
+        command = "ls -1 'capture_combined chdir.txt' 2>&1",
+        status = 2,
+        output = "ls: cannot access 'capture_combined chdir.txt': No such file or directory\n"
+      }, result)
+      assert.are.equal("Executing command failed (exit code 2): ls -1 'capture_combined chdir.txt' 2>&1\nOutput: ls: cannot access 'capture_combined chdir.txt': No such file or directory\n", err)
+    else
+      assert.are.same({
+        command = "ls -1 'capture_combined chdir.txt' 2>&1",
+        status = 2,
+        output = "ls: cannot access capture_combined chdir.txt: No such file or directory\n"
+      }, result)
+      assert.are.equal("Executing command failed (exit code 2): ls -1 'capture_combined chdir.txt' 2>&1\nOutput: ls: cannot access capture_combined chdir.txt: No such file or directory\n", err)
+    end
 
     result, err = shell.capture_combined({ "ls", "-1", "capture_combined chdir.txt" }, { chdir = "spec/tmp" })
     assert.are.same({
@@ -65,12 +74,21 @@ describe("capture_combined", function()
     assert.are.equal(nil, err)
 
     result, err = shell.capture_combined({ "ls", "-1", "chdir.txt" }, { chdir = "spec/tmp/not existent with spaces" })
-    assert.are.same({
-      command = [[sh -c 'cd '"'"'spec/tmp/not existent with spaces'"'"' && ls -1 chdir.txt' 2>&1]],
-      status = 1,
-      output = "sh: line 0: cd: spec/tmp/not existent with spaces: No such file or directory\n",
-    }, result)
-    assert.are.equal("Executing command failed (exit code 1): sh -c 'cd '\"'\"'spec/tmp/not existent with spaces'\"'\"' && ls -1 chdir.txt' 2>&1\nOutput: sh: line 0: cd: spec/tmp/not existent with spaces: No such file or directory\n", err)
+    if string.match(result["output"], "line 1") then
+      assert.are.same({
+        command = [[sh -c 'cd '"'"'spec/tmp/not existent with spaces'"'"' && ls -1 chdir.txt' 2>&1]],
+        status = 2,
+        output = "sh: cd: line 1: can't cd to spec/tmp/not existent with spaces: No such file or directory\n",
+      }, result)
+      assert.are.equal("Executing command failed (exit code 2): sh -c 'cd '\"'\"'spec/tmp/not existent with spaces'\"'\"' && ls -1 chdir.txt' 2>&1\nOutput: sh: cd: line 1: can't cd to spec/tmp/not existent with spaces: No such file or directory\n", err)
+    else
+      assert.are.same({
+        command = [[sh -c 'cd '"'"'spec/tmp/not existent with spaces'"'"' && ls -1 chdir.txt' 2>&1]],
+        status = 1,
+        output = "sh: line 0: cd: spec/tmp/not existent with spaces: No such file or directory\n",
+      }, result)
+      assert.are.equal("Executing command failed (exit code 1): sh -c 'cd '\"'\"'spec/tmp/not existent with spaces'\"'\"' && ls -1 chdir.txt' 2>&1\nOutput: sh: line 0: cd: spec/tmp/not existent with spaces: No such file or directory\n", err)
+    end
 
     assert.has.error(function()
       shell.capture_combined({ "ls", "-1", "chdir.txt" }, { chdir = 1 })
@@ -211,5 +229,26 @@ describe("capture_combined", function()
     assert.has.error(function()
       shell.capture_combined({ "ls" }, { foobar = true })
     end, "bad option 'foobar' (unknown option)")
+  end)
+
+  -- Ensure that even if the output contains the special sequence used to
+  -- workaround lack of exit codes, we still only match the final (real) exit
+  -- code output.
+  it("ignores output containing special status code output", function()
+    local result, err = shell.capture_combined({ "echo", "=====LUA_SHELL_GAME_STATUS_CODE:99" })
+    assert.are.same({
+      command = "echo =====LUA_SHELL_GAME_STATUS_CODE:99 2>&1",
+      status = 0,
+      output = "=====LUA_SHELL_GAME_STATUS_CODE:99\n",
+    }, result)
+    assert.are.equal(nil, err)
+
+    result, err = shell.capture_combined({ "echo", "=====LUA_SHELL_GAME_STATUS_CODE:99\n\n" })
+    assert.are.same({
+      command = "echo '=====LUA_SHELL_GAME_STATUS_CODE:99\n\n' 2>&1",
+      status = 0,
+      output = "=====LUA_SHELL_GAME_STATUS_CODE:99\n\n\n",
+    }, result)
+    assert.are.equal(nil, err)
   end)
 end)

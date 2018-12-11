@@ -4,9 +4,3 @@ services:
     build: .
     volumes:
       - .:/app
-  lua51:
-    build:
-      context: .
-      dockerfile: Dockerfile-lua51
-    volumes:
-      - .:/app

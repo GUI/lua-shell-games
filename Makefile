@@ -1,6 +1,7 @@
 .PHONY: \
 	all \
 	install-test-deps \
+	install-test-deps-apk \
 	install-test-deps-yum \
 	lint \
 	release \
@@ -13,10 +14,10 @@ lint:
 
 test: lint
 	luarocks make --local shell-games-git-1.rockspec
-	busted spec
-	busted --lua=lua spec
-	busted --lua=luajit spec
-	busted --lua=resty spec
+	busted $(BUSTED_ARGS) spec
+
+install-test-deps-apk:
+	apk add --no-cache gcc libc-dev
 
 install-test-deps-yum:
 	yum -y install gcc

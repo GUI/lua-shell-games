@@ -57,7 +57,6 @@ describe("quote", function()
       [[}]],
     }
     for _, str in ipairs(unsafe) do
-      print(str)
       assert.are.equal(string.format([['test%sname']], str), shell.quote("test" .. str .. "name"))
       assert.are.equal(string.format([['test%s'"'"'name'"'"'']], str), shell.quote("test" .. str .. "'name'"))
     end

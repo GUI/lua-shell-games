@@ -4,12 +4,12 @@
 
 A Lua library to help execute shell commands more easily and safely.
 
-- Easily execute shell commands, while capturing the command's output and exit code. Includes compatibility for older versions of Lua (pre 5.2) where `io.popen` does not return exit codes.
+- Easily execute shell commands, while capturing the command's output and exit code. Includes compatibility across versions of Lua, LuaJIT, and OpenResty where `io.popen` may not return exit codes (pre Lua 5.2 behavior).
 - Utilities to quote and escape shell arguments for safer, less error-prone execution.
 
 When executing shell commands, shell-games wraps either `os.execute` or `io.popen` (depending on whether the output is being captured).
 
-*OpenResty Note:* If using shell-games with OpenResty, be aware that executing shell commands is a blocking operation. This may or may not be okay depending on the context of your application, but you may want to consider alternatives like [lua-resty-shell](https://github.com/juce/lua-resty-shell) or [lua-resty-exec](https://github.com/jprjr/lua-resty-exec) if blocking is a concern.
+*OpenResty Note:* If using shell-games with OpenResty, be aware that executing shell commands with this library is a blocking operation. This may or may not be okay depending on the nginx phase (blocking in `init` is okay) and your application's requirements. You may want to consider alternatives like [lua-resty-shell](https://github.com/juce/lua-resty-shell) or [lua-resty-exec](https://github.com/jprjr/lua-resty-exec) if blocking is a concern.
 
 ## Installation
 
@@ -50,6 +50,19 @@ shell.quote("$PATH") -- "'$PATH'"
 -- Quote and join
 shell.join({ "ls", "-l", "/tmp/foo bar" }) -- "ls -l '/tmp/foo bar'"
 ```
+
+## Compatibility
+
+Tested against:
+
+- Lua 5.1
+- Lua 5.2
+- Lua 5.3
+- LuaJIT 2.0
+- LuaJIT 2.0 compiled with `LUAJIT_ENABLE_LUA52COMPAT`
+- LuaJIT 2.1-beta
+- LuaJIT 2.1-beta compiled with `LUAJIT_ENABLE_LUA52COMPAT`
+- OpenResty
 
 ## API
 
