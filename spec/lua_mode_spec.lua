@@ -47,14 +47,18 @@ describe("lua mode", function()
     local handle = io.popen("echo foo", "r")
     handle:read("*a")
     local ok, status, code = handle:close()
-    if os.getenv("REFUTE_LUA52_BEHAVIOR") == "true" then
-      assert.are.equal(true, ok)
-      assert.are.equal(nil, status)
-      assert.are.equal(nil, code)
-    elseif os.getenv("ASSERT_NGX") == "true" and ok == nil then
+    -- io.popen's normal behavior (when not wrapped by shell-games) under
+    -- OpenResty can be erratic, since sometimes it returns normally, and other
+    -- times it returns an unsuccessful exit code:
+    -- https://github.com/openresty/lua-nginx-module/issues/779
+    if os.getenv("ASSERT_NGX") == "true" and ok == nil then
       assert.are.equal(nil, ok)
       assert.are.equal("No child processes", status)
       assert.are.equal(10, code)
+    elseif os.getenv("REFUTE_LUA52_BEHAVIOR") == "true" then
+      assert.are.equal(true, ok)
+      assert.are.equal(nil, status)
+      assert.are.equal(nil, code)
     else
       assert.are.equal(true, ok)
       assert.are.equal("exit", status)
