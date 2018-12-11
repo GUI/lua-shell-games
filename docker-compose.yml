@@ -2,5 +2,11 @@ version: "2"
 services:
   app:
     build: .
+    environment:
+      LUA_PATH: /root/.luarocks/share/lua/5.1/?.lua;;
+      BUSTED_ARGS: --lua=resty
+      EXPECTED_LUA_VERSION: Lua 5.1
+      EXPECTED_LUAJIT_VERSION: LuaJIT 2.1
+      ASSERT_NGX: "true"
     volumes:
       - .:/app

@@ -5,7 +5,7 @@ jobs:
       - image: nickblah/lua:5.1-luarocks-alpine
     environment:
       EXPECTED_LUA_VERSION: Lua 5.1
-      REFUTE_LUA52_BEHAVIOR: true
+      REFUTE_LUA52_BEHAVIOR: "true"
     steps:
       - checkout
       - run: apk add --no-cache make
@@ -40,7 +40,7 @@ jobs:
     environment:
       EXPECTED_LUA_VERSION: Lua 5.1
       EXPECTED_LUAJIT_VERSION: LuaJIT 2.0
-      REFUTE_LUA52_BEHAVIOR: true
+      REFUTE_LUA52_BEHAVIOR: "true"
     steps:
       - checkout
       - run: apk add --no-cache make
@@ -65,7 +65,7 @@ jobs:
     environment:
       EXPECTED_LUA_VERSION: Lua 5.1
       EXPECTED_LUAJIT_VERSION: LuaJIT 2.1
-      REFUTE_LUA52_BEHAVIOR: true
+      REFUTE_LUA52_BEHAVIOR: "true"
     steps:
       - checkout
       - run: apk add --no-cache make
@@ -92,7 +92,7 @@ jobs:
       BUSTED_ARGS: --lua=resty
       EXPECTED_LUA_VERSION: Lua 5.1
       EXPECTED_LUAJIT_VERSION: LuaJIT 2.1
-      ASSERT_NGX: true
+      ASSERT_NGX: "true"
     steps:
       - checkout
       - run: yum -y install make
@@ -108,8 +108,8 @@ jobs:
       BUSTED_ARGS: --lua=resty
       EXPECTED_LUA_VERSION: Lua 5.1
       EXPECTED_LUAJIT_VERSION: LuaJIT 2.1
-      REFUTE_LUA52_BEHAVIOR: true
-      ASSERT_NGX: true
+      REFUTE_LUA52_BEHAVIOR: "true"
+      ASSERT_NGX: "true"
     steps:
       - checkout
       - run: yum -y install make

@@ -1,1 +1,6 @@
 /spec/tmp
+
+# Ignore LuaRocks build artifacts
+/shell-games-*
+/lua-shell-games-*
+!/shell-games-*.rockspec
