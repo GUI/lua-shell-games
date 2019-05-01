@@ -106,10 +106,17 @@ describe("capture_combined", function()
 
     result, err = shell.capture_combined({ "env" }, { env = { SHELL_GAMES_FOO = "foo bar" } })
     assert.are.same({ "command", "output", "status" }, table_keys(result))
-    assert.are.equal([[sh -c 'env '"'"'SHELL_GAMES_FOO=foo bar'"'"' && env' 2>&1]], result["command"])
+    assert.are.equal("env 'SHELL_GAMES_FOO=foo bar' env 2>&1", result["command"])
     assert.are.equal(0, result["status"])
     assert.are.match("PATH=/", result["output"])
     assert.are.match("SHELL_GAMES_FOO=foo bar", result["output"])
+    assert.are.equal(nil, err)
+
+    result, err = shell.capture_combined({ "echo" }, { env = { SHELL_GAMES_FOO = "foo bar" } })
+    assert.are.same({ "command", "output", "status" }, table_keys(result))
+    assert.are.equal("env 'SHELL_GAMES_FOO=foo bar' echo 2>&1", result["command"])
+    assert.are.equal(0, result["status"])
+    assert.are.equal("\n", result["output"])
     assert.are.equal(nil, err)
 
     assert.has.error(function()
@@ -187,6 +194,20 @@ describe("capture_combined", function()
     assert.has.error(function()
       shell.capture_combined({ "umask" }, { umask = 077 })
     end, "bad option 'umask' (string expected, got number)")
+  end)
+
+  it("multiple options", function()
+    local result, err = shell.capture_combined({ "umask" }, {
+      env = { FOO = "bar" },
+      chdir = "spec/tmp",
+      umask = "077",
+    })
+    assert.are.same({
+      command = "sh -c 'cd spec/tmp && umask 077 && env FOO=bar umask' 2>&1",
+      status = 0,
+      output = "0077\n",
+    }, result)
+    assert.are.equal(nil, err)
   end)
 
   it("quotes arguments", function()

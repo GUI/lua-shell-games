@@ -55,7 +55,7 @@ local function add_command_options(command, options)
     for env_key, env_value in pairs(options["env"]) do
       table.insert(env, env_key .. "=" .. env_value)
     end
-    command = _M.join(env) .. " && " .. command
+    command = _M.join(env) .. " " .. command
   end
 
   if options["umask"] ~= nil then

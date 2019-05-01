@@ -72,10 +72,17 @@ describe("run", function()
 
     result, err = shell.run_raw("env", { capture = true, env = { SHELL_GAMES_FOO = "foo bar" } })
     assert.are.same({ "command", "output", "status" }, table_keys(result))
-    assert.are.equal("env 'SHELL_GAMES_FOO=foo bar' && env", result["command"])
+    assert.are.equal("env 'SHELL_GAMES_FOO=foo bar' env", result["command"])
     assert.are.equal(0, result["status"])
     assert.are.match("PATH=/", result["output"])
     assert.are.match("SHELL_GAMES_FOO=foo bar", result["output"])
+    assert.are.equal(nil, err)
+
+    result, err = shell.run_raw("echo", { capture = true, env = { SHELL_GAMES_FOO = "foo bar" } })
+    assert.are.same({ "command", "output", "status" }, table_keys(result))
+    assert.are.equal("env 'SHELL_GAMES_FOO=foo bar' echo", result["command"])
+    assert.are.equal(0, result["status"])
+    assert.are.equal("\n", result["output"])
     assert.are.equal(nil, err)
 
     assert.has.error(function()
@@ -167,6 +174,19 @@ describe("run", function()
     assert.has.error(function()
       shell.run_raw("umask", { umask = 077 })
     end, "bad option 'umask' (string expected, got number)")
+  end)
+
+  it("multiple options", function()
+    local result, err = shell.run_raw("umask", {
+      env = { FOO = "bar" },
+      chdir = "spec/tmp",
+      umask = "077",
+    })
+    assert.are.same({
+      command = "cd spec/tmp && umask 077 && env FOO=bar umask",
+      status = 0,
+    }, result)
+    assert.are.equal(nil, err)
   end)
 
   it("allows for unquoted arguments", function()
