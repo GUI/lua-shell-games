@@ -197,15 +197,15 @@ describe("capture_combined", function()
   end)
 
   it("multiple options", function()
-    local result, err = shell.capture_combined({ "umask" }, {
+    local result, err = shell.capture_combined({ "echo", "foo" }, {
       env = { FOO = "bar" },
       chdir = "spec/tmp",
       umask = "077",
     })
     assert.are.same({
-      command = "sh -c 'cd spec/tmp && umask 077 && env FOO=bar umask' 2>&1",
+      command = "sh -c 'cd spec/tmp && umask 077 && env FOO=bar echo foo' 2>&1",
       status = 0,
-      output = "0077\n",
+      output = "foo\n",
     }, result)
     assert.are.equal(nil, err)
   end)

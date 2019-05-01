@@ -177,13 +177,13 @@ describe("run", function()
   end)
 
   it("multiple options", function()
-    local result, err = shell.run({ "umask" }, {
+    local result, err = shell.run({ "echo", "foo" }, {
       env = { FOO = "bar" },
       chdir = "spec/tmp",
       umask = "077",
     })
     assert.are.same({
-      command = "cd spec/tmp && umask 077 && env FOO=bar umask",
+      command = "cd spec/tmp && umask 077 && env FOO=bar echo foo",
       status = 0,
     }, result)
     assert.are.equal(nil, err)
