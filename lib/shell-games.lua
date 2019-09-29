@@ -1,5 +1,5 @@
 local _M = {
-  _VERSION = "1.0.1"
+  _VERSION = "1.0.2"
 }
 
 -- Valid options for the `run` commands.
