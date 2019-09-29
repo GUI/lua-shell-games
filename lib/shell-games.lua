@@ -108,11 +108,15 @@ local function capture(command)
   -- (http://lua-users.org/lists/lua-l/2009-06/msg00133.html).
   --
   -- This approach also needs to be used in OpenResty, even when LuaJIT is
-  -- compiled with 5.2 features (LUAJIT_ENABLE_LUA52COMPAT), since nginx's
-  -- SIGCHLD handler interferes with handle:close() behavior:
+  -- compiled with 5.2 features (LUAJIT_ENABLE_LUA52COMPAT), before OpenResty
+  -- v1.15, since nginx's SIGCHLD handler interferes with handle:close()
+  -- behavior. However, this should behave properly in OpenResty 1.15 as long
+  -- as the "lua_sa_restart" option is left enabled (the default).
   -- https://github.com/openresty/lua-nginx-module/issues/779
+  -- https://github.com/openresty/resty-cli/issues/35
+  -- https://github.com/openresty/lua-nginx-module/pull/1296
   local status_code_workaround = false
-  if not LUA52_MODE or ngx then -- luacheck: globals ngx
+  if not LUA52_MODE or (ngx and ngx.config.ngx_lua_version < 10014) then -- luacheck: globals ngx
     status_code_workaround = true
   end
 
@@ -128,8 +132,7 @@ local function capture(command)
 
   local handle = io.popen(command, "r")
 
-  local all_output
-  all_output = handle:read("*a")
+  local all_output = handle:read("*a")
 
   local result = {}
   local err
@@ -152,7 +155,11 @@ local function capture(command)
     if result["status"] == nil then
       -- This means we never got the "STATUS_CODE" output, so the entire
       -- sub-processes must have gotten killed off.
-      err = "Command exited prematurely: " .. command .. "\nOutput: " .. (all_output or "")
+      err = "Command exited prematurely: " .. command .. "\n"
+      if ngx then -- luacheck: globals ngx
+        err = err .. "This may occur in older versions of OpenResty due to nginx signal handling. Upgrade to OpenResty 1.15 or newer (with ngx_lua 0.10.14 or newer), and ensure the 'lua_sa_restart' option is enabled (the default).\n"
+      end
+      err = err .. "Output: " .. (all_output or "")
     end
   end
 

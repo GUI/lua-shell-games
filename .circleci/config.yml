@@ -84,7 +84,22 @@ jobs:
       - run: make install-test-deps-apk
       - run: make install-test-deps
       - run: make test
-  openresty:
+  openresty-1.15:
+    docker:
+      - image: openresty/openresty:1.15.8.1-4-centos
+    environment:
+      LUA_PATH: /root/.luarocks/share/lua/5.1/?.lua;;
+      BUSTED_ARGS: --lua=resty
+      EXPECTED_LUA_VERSION: Lua 5.1
+      EXPECTED_LUAJIT_VERSION: LuaJIT 2.1
+      ASSERT_NGX: "true"
+    steps:
+      - checkout
+      - run: yum -y install make
+      - run: make install-test-deps-yum
+      - run: make install-test-deps
+      - run: make test
+  openresty-1.13:
     docker:
       - image: openresty/openresty:1.13.6.2-2-centos
     environment:
@@ -127,5 +142,6 @@ workflows:
       - luajit2.0-lua52compat
       - luajit2.1-beta
       - luajit2.1-beta-lua52compat
-      - openresty
+      - openresty-1.13
+      - openresty-1.15
       - openresty-no-lua52compat

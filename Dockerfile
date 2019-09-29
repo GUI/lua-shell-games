@@ -1,4 +1,4 @@
-FROM openresty/openresty:1.13.6.2-2-centos
+FROM openresty/openresty:1.15.8.1-4-centos
 
 # Build dependencies.
 RUN yum -y install make
