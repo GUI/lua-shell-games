@@ -22,6 +22,19 @@ local is_luajit = (string.dump(function() end) or ""):sub(1, 3) == "\027LJ"
 local is_luajit52 = is_luajit and #setmetatable({}, { __len = function() return 1 end }) == 1
 local LUA52_MODE = lua_version > "5.1" or is_luajit52
 
+-- Detect when the OpenResty version is < v1.15 (ngx_lua < v0.10.14). For these
+-- older versions, io.popen is unstable due to nginx's SIGCHLD handler. So for
+-- these versions, only ever use os.execute and capture output by writing it to
+-- a temporary file.
+--
+-- OpenResty 1.15+ (ngx_lua 0.10.14+) should behave properly as long as the
+-- "lua_sa_restart" option is left enabled (the default).
+--
+-- https://github.com/openresty/lua-nginx-module/issues/779
+-- https://github.com/openresty/resty-cli/issues/35
+-- https://github.com/openresty/lua-nginx-module/pull/1296
+local NGX_UNSTABLE_POPEN = (ngx and ngx.config.ngx_lua_version < 10014) -- luacheck: globals ngx
+
 -- Characters that need shell escaping.
 local UNSAFE_CHARS = "[^A-Za-z0-9_@%%+=:,./-]"
 
@@ -100,72 +113,6 @@ local function add_command_options(command, options)
   return command
 end
 
-local function capture(command)
-  -- By default we'll try to get the exit code from io.popen's handle:close()
-  -- behavior. However, this functionality is only available in Lua 5.2+. So
-  -- for Lua 5.1 and older, fallback to a workaround approach which consists of
-  -- appending the status code to the shell output, and then parsing that out
-  -- (http://lua-users.org/lists/lua-l/2009-06/msg00133.html).
-  --
-  -- This approach also needs to be used in OpenResty, even when LuaJIT is
-  -- compiled with 5.2 features (LUAJIT_ENABLE_LUA52COMPAT), before OpenResty
-  -- v1.15, since nginx's SIGCHLD handler interferes with handle:close()
-  -- behavior. However, this should behave properly in OpenResty 1.15 as long
-  -- as the "lua_sa_restart" option is left enabled (the default).
-  -- https://github.com/openresty/lua-nginx-module/issues/779
-  -- https://github.com/openresty/resty-cli/issues/35
-  -- https://github.com/openresty/lua-nginx-module/pull/1296
-  local status_code_workaround = false
-  if not LUA52_MODE or (ngx and ngx.config.ngx_lua_version < 10014) then -- luacheck: globals ngx
-    status_code_workaround = true
-  end
-
-  if status_code_workaround then
-    -- Ensure that the command is wrapped in sub-shell, so we should always
-    -- output the status code output afterwards, even if the underlying command
-    -- exits early.
-    if not string.match(command, "^sh -c ") then
-      command = "sh -c " .. _M.quote(command)
-    end
-    command = command .. [[; echo -n "=====LUA_SHELL_GAME_STATUS_CODE:$?"]]
-  end
-
-  local handle = io.popen(command, "r")
-
-  local all_output = handle:read("*a")
-
-  local result = {}
-  local err
-  if not status_code_workaround then
-    local _, _, close_status = handle:close()
-    result["status"] = close_status
-    result["output"] = all_output
-  else
-    handle:close()
-
-    -- Parse the status code out of the output.
-    if all_output then
-      local match_output, match_status = string.match(all_output, [[^(.*)=====LUA_SHELL_GAME_STATUS_CODE:(%d+)$]])
-      if match_output and match_status then
-        result["output"] = match_output
-        result["status"] = tonumber(match_status)
-      end
-    end
-
-    if result["status"] == nil then
-      -- This means we never got the "STATUS_CODE" output, so the entire
-      -- sub-processes must have gotten killed off.
-      err = "Command exited prematurely: " .. command .. "\n"
-      if ngx then -- luacheck: globals ngx
-        err = err .. "This may occur in older versions of OpenResty due to nginx signal handling. Upgrade to OpenResty 1.15 or newer (with ngx_lua 0.10.14 or newer), and ensure the 'lua_sa_restart' option is enabled (the default).\n"
-      end
-      err = err .. "Output: " .. (all_output or "")
-    end
-  end
-
-  return result, err
-end
-
 local function execute(command)
   local result
 
@@ -191,6 +138,80 @@ local function execute(command)
   end
 
   return result
+end
+
+local function capture(command)
+  local tmp_output_path
+
+  -- By default we'll try to get the exit code from io.popen's handle:close()
+  -- behavior. However, this functionality is only available in Lua 5.2+. So
+  -- for Lua 5.1 and older, fallback to a workaround approach which consists of
+  -- appending the status code to the shell output, and then parsing that out
+  -- (http://lua-users.org/lists/lua-l/2009-06/msg00133.html).
+  local status_code_workaround = false
+  if not LUA52_MODE and not NGX_UNSTABLE_POPEN then
+    status_code_workaround = true
+  end
+
+  if status_code_workaround or NGX_UNSTABLE_POPEN then
+    -- Ensure that the command is wrapped in sub-shell, so we should always
+    -- output the status code output afterwards, even if the underlying command
+    -- exits early. This sub shell also ensures we properly handle the output
+    -- redirection when outputting to a temp file.
+    if not string.match(command, "^sh -c ") then
+      command = "sh -c " .. _M.quote(command)
+    end
+
+    if status_code_workaround then
+      command = command .. [[; echo -n "=====LUA_SHELL_GAME_STATUS_CODE:$?"]]
+    elseif NGX_UNSTABLE_POPEN then
+      -- For OpenResty < 1.15, capture output to a file to deal with unstable
+      -- "popen" issues.
+      tmp_output_path = os.tmpname()
+      command = command .. " > " .. _M.quote(tmp_output_path)
+    end
+  end
+
+  local result = {}
+  local err
+  local handle
+  if NGX_UNSTABLE_POPEN then
+    result, err = execute(command)
+    handle = io.open(tmp_output_path, "r")
+  else
+    handle = io.popen(command, "r")
+  end
+  local all_output = handle:read("*a")
+
+  if not status_code_workaround then
+    if NGX_UNSTABLE_POPEN then
+      os.remove(tmp_output_path)
+    else
+      local _, _, close_status = handle:close()
+      result["status"] = close_status
+    end
+
+    result["output"] = all_output
+  else
+    handle:close()
+
+    -- Parse the status code out of the output.
+    if all_output then
+      local match_output, match_status = string.match(all_output, [[^(.*)=====LUA_SHELL_GAME_STATUS_CODE:(%d+)$]])
+      if match_output and match_status then
+        result["output"] = match_output
+        result["status"] = tonumber(match_status)
+      end
+    end
+
+    if result["status"] == nil then
+      -- This means we never got the "STATUS_CODE" output, so the entire
+      -- sub-processes must have gotten killed off.
+      err = "Command exited prematurely: " .. command .. "\nOutput: " .. (all_output or "")
+    end
+  end
+
+  return result, err
 end
 
 -- Quoting implementation based on Python's shlex:
