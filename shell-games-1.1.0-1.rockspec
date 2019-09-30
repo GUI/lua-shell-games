@@ -1,8 +1,8 @@
 package = "shell-games"
-version = "1.0.2-1"
+version = "1.1.0-1"
 source = {
   url = "git://github.com/GUI/lua-shell-games.git",
-  tag = "v1.0.2"
+  tag = "v1.1.0"
 }
 description = {
   summary = "A library to help execute shell commands more easily and safely.",

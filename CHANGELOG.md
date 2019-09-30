@@ -1,5 +1,10 @@
 # shell-games Change Log
 
+## 1.1.0 - 2019-09-30
+
+### Fixed
+- Improve reliability for OpenResty versions prior to 1.15 by eliminating io.popen calls in these older versions (when capturing output, temporary files will be used instead).
+
 ## 1.0.2 - 2019-09-29
 
 ### Fixed
