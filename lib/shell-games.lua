@@ -177,9 +177,9 @@ local function capture(command)
   local handle
   if NGX_UNSTABLE_POPEN then
     result, err = execute(command)
-    handle = io.open(tmp_output_path, "r")
+    handle = assert(io.open(tmp_output_path, "r"))
   else
-    handle = io.popen(command, "r")
+    handle = assert(io.popen(command, "r"))
   end
   local all_output = handle:read("*a")
 
