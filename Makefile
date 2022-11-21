@@ -13,7 +13,6 @@ lint:
 	luacheck .
 
 test: lint
-	luarocks make --local shell-games-git-1.rockspec
 	busted $(BUSTED_ARGS) spec
 
 install-test-deps-apk:
