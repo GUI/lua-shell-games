@@ -74,13 +74,20 @@ describe("capture_combined", function()
     assert.are.equal(nil, err)
 
     result, err = shell.capture_combined({ "ls", "-1", "chdir.txt" }, { chdir = "spec/tmp/not existent with spaces" })
-    if string.match(result["output"], "line 1") then
+    if string.match(result["output"], "cd: line 1") then
       assert.are.same({
         command = [[sh -c 'cd '"'"'spec/tmp/not existent with spaces'"'"' && ls -1 chdir.txt' 2>&1]],
         status = 2,
         output = "sh: cd: line 1: can't cd to spec/tmp/not existent with spaces: No such file or directory\n",
       }, result)
       assert.are.equal("Executing command failed (exit code 2): sh -c 'cd '\"'\"'spec/tmp/not existent with spaces'\"'\"' && ls -1 chdir.txt' 2>&1\nOutput: sh: cd: line 1: can't cd to spec/tmp/not existent with spaces: No such file or directory\n", err)
+    elseif string.match(result["output"], "sh: line 1") then
+      assert.are.same({
+        command = [[sh -c 'cd '"'"'spec/tmp/not existent with spaces'"'"' && ls -1 chdir.txt' 2>&1]],
+        status = 1,
+        output = "sh: line 1: cd: spec/tmp/not existent with spaces: No such file or directory\n",
+      }, result)
+      assert.are.equal("Executing command failed (exit code 1): sh -c 'cd '\"'\"'spec/tmp/not existent with spaces'\"'\"' && ls -1 chdir.txt' 2>&1\nOutput: sh: line 1: cd: spec/tmp/not existent with spaces: No such file or directory\n", err)
     else
       assert.are.same({
         command = [[sh -c 'cd '"'"'spec/tmp/not existent with spaces'"'"' && ls -1 chdir.txt' 2>&1]],
